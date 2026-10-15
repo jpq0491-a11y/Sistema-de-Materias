@@ -3,6 +3,7 @@ import { Head, Link, setLayoutProps } from '@inertiajs/vue3';
 import DeleteMateria from '@/components/DeleteMateria.vue';
 import Heading from '@/components/Heading.vue';
 import { Button } from '@/components/ui/button';
+import { formatHorario } from '@/lib/horarios';
 import { edit, index, show } from '@/routes/materias';
 import type { Materia } from '@/types';
 
@@ -42,6 +43,22 @@ const formatDate = (date: string): string =>
             <div class="grid grid-cols-3 gap-4 px-4 py-3">
                 <dt class="text-muted-foreground">Profesor</dt>
                 <dd class="col-span-2">{{ materia.profesor }}</dd>
+            </div>
+            <div class="grid grid-cols-3 gap-4 px-4 py-3">
+                <dt class="text-muted-foreground">Horario</dt>
+                <dd class="col-span-2">
+                    <ul v-if="materia.horarios?.length" class="space-y-1">
+                        <li
+                            v-for="horario in materia.horarios"
+                            :key="horario.id"
+                        >
+                            {{ formatHorario(horario) }}
+                        </li>
+                    </ul>
+                    <span v-else class="text-muted-foreground">
+                        Sin horario
+                    </span>
+                </dd>
             </div>
             <div class="grid grid-cols-3 gap-4 px-4 py-3">
                 <dt class="text-muted-foreground">Creada</dt>

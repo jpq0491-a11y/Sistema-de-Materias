@@ -3,6 +3,7 @@ import { Head, Link } from '@inertiajs/vue3';
 import DeleteMateria from '@/components/DeleteMateria.vue';
 import Heading from '@/components/Heading.vue';
 import { Button } from '@/components/ui/button';
+import { formatHorario } from '@/lib/horarios';
 import { create, edit, index, show } from '@/routes/materias';
 import type { Materia } from '@/types';
 
@@ -51,6 +52,7 @@ defineProps<{
                         <th class="px-4 py-3 font-medium">Nombre</th>
                         <th class="px-4 py-3 font-medium">Créditos</th>
                         <th class="px-4 py-3 font-medium">Profesor</th>
+                        <th class="px-4 py-3 font-medium">Horario</th>
                         <th class="px-4 py-3 text-right font-medium">
                             Acciones
                         </th>
@@ -72,6 +74,20 @@ defineProps<{
                         </td>
                         <td class="px-4 py-3">{{ materia.creditos }}</td>
                         <td class="px-4 py-3">{{ materia.profesor }}</td>
+                        <td class="px-4 py-3">
+                            <ul
+                                v-if="materia.horarios?.length"
+                                class="whitespace-nowrap"
+                            >
+                                <li
+                                    v-for="horario in materia.horarios"
+                                    :key="horario.id"
+                                >
+                                    {{ formatHorario(horario) }}
+                                </li>
+                            </ul>
+                            <span v-else class="text-muted-foreground">—</span>
+                        </td>
                         <td class="px-4 py-3">
                             <div class="flex justify-end gap-2">
                                 <Button variant="outline" size="sm" as-child>

@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Horario;
 use App\Models\Materia;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -48,6 +49,36 @@ test('storing a materia requires valid data', function () {
     expect(Materia::count())->toBe(0);
 });
 
+test('a materia can be stored with its horarios', function () {
+    $this->post(route('materias.store'), [
+        'nombre' => 'Programación Web',
+        'creditos' => 8,
+        'profesor' => 'Ana López',
+        'horarios' => [
+            ['dia' => 3, 'hora_inicio' => '10:00', 'hora_fin' => '12:00'],
+            ['dia' => 1, 'hora_inicio' => '08:00', 'hora_fin' => '10:00'],
+        ],
+    ])->assertSessionHasNoErrors();
+
+    expect(Materia::sole()->horarios->map->only(['dia', 'hora_inicio', 'hora_fin'])->all())->toBe([
+        ['dia' => 1, 'hora_inicio' => '08:00', 'hora_fin' => '10:00'],
+        ['dia' => 3, 'hora_inicio' => '10:00', 'hora_fin' => '12:00'],
+    ]);
+});
+
+test('horarios require a valid day and an end time after the start time', function () {
+    $this->post(route('materias.store'), [
+        'nombre' => 'Programación Web',
+        'creditos' => 8,
+        'profesor' => 'Ana López',
+        'horarios' => [
+            ['dia' => 8, 'hora_inicio' => '12:00', 'hora_fin' => '10:00'],
+        ],
+    ])->assertSessionHasErrors(['horarios.0.dia', 'horarios.0.hora_fin']);
+
+    expect(Materia::count())->toBe(0);
+});
+
 test('the show page displays the materia', function () {
     $materia = Materia::factory()->create();
 
@@ -56,6 +87,7 @@ test('the show page displays the materia', function () {
         ->assertInertia(fn (Assert $page) => $page
             ->component('materias/Show')
             ->where('materia.id', $materia->id)
+            ->has('materia.horarios', 0)
         );
 });
 
@@ -93,4 +125,33 @@ test('a materia can be deleted', function () {
         ->assertRedirect(route('materias.index'));
 
     $this->assertModelMissing($materia);
+});
+
+test('updating a materia replaces its horarios', function () {
+    $materia = Materia::factory()->has(Horario::factory()->count(2))->create();
+
+    $this->put(route('materias.update', $materia), [
+        'nombre' => $materia->nombre,
+        'creditos' => $materia->creditos,
+        'profesor' => $materia->profesor,
+        'horarios' => [
+            ['dia' => 5, 'hora_inicio' => '14:00', 'hora_fin' => '16:00'],
+        ],
+    ])->assertRedirect(route('materias.show', $materia));
+
+    expect($materia->horarios()->get()->map->only(['dia', 'hora_inicio', 'hora_fin'])->all())->toBe([
+        ['dia' => 5, 'hora_inicio' => '14:00', 'hora_fin' => '16:00'],
+    ]);
+});
+
+test('updating a materia without horarios removes them', function () {
+    $materia = Materia::factory()->has(Horario::factory())->create();
+
+    $this->put(route('materias.update', $materia), [
+        'nombre' => $materia->nombre,
+        'creditos' => $materia->creditos,
+        'profesor' => $materia->profesor,
+    ])->assertRedirect(route('materias.show', $materia));
+
+    expect($materia->horarios()->count())->toBe(0);
 });

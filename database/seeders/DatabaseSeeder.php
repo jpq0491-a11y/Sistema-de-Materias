@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Horario;
 use App\Models\Materia;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -23,6 +24,6 @@ class DatabaseSeeder extends Seeder
             'email' => 'test@example.com',
         ]);
 
-        Materia::factory(10)->create();
+        Materia::factory(10)->has(Horario::factory()->count(2))->create();
     }
 }

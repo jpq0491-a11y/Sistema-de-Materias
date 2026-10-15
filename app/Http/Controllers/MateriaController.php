@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\MateriaRequest;
 use App\Models\Materia;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -16,7 +17,7 @@ class MateriaController extends Controller
     public function index(): Response
     {
         return Inertia::render('materias/Index', [
-            'materias' => Materia::query()->orderBy('nombre')->get(),
+            'materias' => Materia::query()->with('horarios')->orderBy('nombre')->get(),
         ]);
     }
 
@@ -33,7 +34,12 @@ class MateriaController extends Controller
      */
     public function store(MateriaRequest $request): RedirectResponse
     {
-        $materia = Materia::create($request->validated());
+        $materia = DB::transaction(function () use ($request): Materia {
+            $materia = Materia::create($request->safe()->except('horarios'));
+            $materia->horarios()->createMany($request->validated('horarios', []));
+
+            return $materia;
+        });
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Materia creada.']);
 
@@ -46,7 +52,7 @@ class MateriaController extends Controller
     public function show(Materia $materia): Response
     {
         return Inertia::render('materias/Show', [
-            'materia' => $materia,
+            'materia' => $materia->load('horarios'),
         ]);
     }
 
@@ -56,7 +62,7 @@ class MateriaController extends Controller
     public function edit(Materia $materia): Response
     {
         return Inertia::render('materias/Edit', [
-            'materia' => $materia,
+            'materia' => $materia->load('horarios'),
         ]);
     }
 
@@ -65,7 +71,11 @@ class MateriaController extends Controller
      */
     public function update(MateriaRequest $request, Materia $materia): RedirectResponse
     {
-        $materia->update($request->validated());
+        DB::transaction(function () use ($request, $materia): void {
+            $materia->update($request->safe()->except('horarios'));
+            $materia->horarios()->delete();
+            $materia->horarios()->createMany($request->validated('horarios', []));
+        });
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Materia actualizada.']);
 
